@@ -24,25 +24,11 @@ server.on('request', function(req, res){
 var node = {
     id: 8,
     successor: 10,
+    successorPort: 1339,
     predecessor: 5
 };
 
-
 function join(port){
-    var currentNode = getRequest(port);
-    console.log("Join "  + currentNode.id);
-    while(true){
-        if(this.id > currentNode.id && this.id < currentNode.succId) {
-            predecessor = currentNode.id;
-            successor = currentNode.succId;
-
-            break;
-        }
-        break;
-    }
-}
-
-function getRequest(port) {
     var options = {
         host: '127.0.0.1',
         path: "/",
@@ -50,16 +36,19 @@ function getRequest(port) {
     };
 
     callback = function (response) {
-        var str = "";
+        var res = "";
         response.on("data", function(chunk){
-            str += chunk;
-        })
+            res += chunk;
+        });
         response.on("end", function(){
-           JSON.parse(str);
+            var currentNode = JSON.parse(res);
+            if(node.id > currentNode.id && node.id < currentNode.successor){
+                return currentNode;
+            } else {
+                join(currentNode.successorPort);
+            }
         })
     };
-    var req = http.get(options, callback);
-    console.log("Req " + str);
-    return str;
+    http.get(options, callback);
 }
 

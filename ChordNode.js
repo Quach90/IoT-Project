@@ -29,8 +29,11 @@ var node = {
 
 
 function join(port){
-    var currentNode = getRequest(port);
-    console.log(currentNode);
+    var currentNode = {
+        port: this.port,
+        id: getRequest(port, '/id'),
+        successorId: getRequest(port, '/successorid')
+    };
     while(true){
         if(this.id > currentNode.id && this.id < currentNode.succId) {
             predecessor = currentNode.id;
