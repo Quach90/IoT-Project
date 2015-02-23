@@ -4,19 +4,69 @@
     <meta charset="UTF-8">
     <title></title>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="./client.js"></script>
+
+    <style>
+        h1 {
+            text-align: center ;
+        }
+        h2 {
+            font-size: 1.2rem;
+        }
+        table {
+            border: 1px solid #666;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        th {
+            width: 33%;
+            height: 30px;
+            background: #f8f8f8;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 2px;
+        }
+        td {
+            text-align: center;
+        }
+    </style>
 </head>
-<script>
-    $.get("http://127.0.0.1:1338/getNode");
-
-
-    xmlhttp=new XMLHttpRequest();
-
-    xmlhttp.open("GET","http://127.0.0.1:1338/getNode",false);
-    xmlhttp.send();
-    console.log(xmlhttp.responseText);
-
-</script>
 <body>
+<h1 id="headline"></h1>
+<table>
+    <tr>
+        <th>Predecessor</th>
+        <th>Successor</th>
+    </tr>
+    <tr>
+        <td id="pred">
+            Hej
+        </td>
+        <td id="succ">
+            Hej
+        </td>
+    </tr>
+</table>
+<div id="lookup">
+    <h2>Lookup</h2>
+    <form>
+        <input type="text" id="lookupValue">
+        <input type="button" onclick="lookup()" value="submit">
+    </form>
+</div>
+<div id="tableHolder">
+    <h2>Fingertable</h2>
+    <table id="fingerTable">
+        <tr>
+            <th>Start</th>
+            <th>Interval</th>
+            <th>Successor</th>
+        </tr>
+
+    </table>
+
+</div>
+
 
 </body>
 
