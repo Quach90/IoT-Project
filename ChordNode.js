@@ -10,9 +10,56 @@ var ChordNode = function(ownPort, knownPort){
         var request = require('querystring').parse(require("url").parse(req.url).query);
 
         if(req.method == "GET") {
-            var response = JSON.stringify(me);
-            res.writeHead(200);
-            res.write(response);
+            if (request.get == "index") {
+                res.writeHeader(200, {"Content-Type": "text/html"});
+                res.write('<!DOCTYPE html>');
+                res.write('<html>');
+                res.write('<head lang="en">');
+                res.write('<meta charset="UTF-8">');
+                res.write('<title>Chord Ring</title>');
+                res.write('</head>');
+                res.write('<body>');
+                res.write('<h1 id="nodeId">' + me.id + '</h1>');
+                res.write('<table>');
+                res.write('<tr>');
+                res.write('<td><a href="http://127.0.0.1:' + me.predecessorPort + '/?get=index">Predecessor</a></td>');
+                res.write('<td><a href="http://127.0.0.1:' + me.successorPort + '/?get=index">Successor</a></td>');
+                res.write('</tr>');
+                res.write('<tr>');
+                res.write('<td><form action="http://127.0.0.1:' + me.port + '" method="GET">');
+                res.write('<input type="text" name="query">');
+                res.write('<input type="submit">');
+                res.write('</form>');
+                res.write('</td>');
+                res.write('<td><a href="http://127.0.0.1:' + me.port + '/?ready=1">Redirect</a></td>');
+                res.write('</tr>');
+                res.write('<tr>');
+                res.write('<td><a href="http://127.0.0.1:1330/?get=server&port=' + me.port + '" >Add Server</a></td>');
+                res.write('<td><a href="http://127.0.0.1:' + me.port + '/?leave=1">Leave</a></td>');
+                res.write('</tr>');
+                res.write('</table>');
+                res.write('</body>');
+                res.write('</html>');
+            } else if (request.query) {
+                lookup(request.query, me.port)
+                res.writeHead(302, {
+                    'Location': 'http://127.0.0.1:' + me.port + '/?get=index'
+                })
+            } else if (request.ready) {
+                res.writeHead(302, {
+                    'Location': 'http://127.0.0.1:' + lookupRes + '/?get=index'
+                })
+            } else if (request.leave) {
+                leave();
+                res.writeHead(302, {
+                    'Location': 'http://127.0.0.1:' + me.successorPort + '/?get=index'
+                })
+            }
+            else {
+                var response = JSON.stringify(me);
+                res.writeHead(200);
+                res.write(response);
+        }
         } else if(req.method == "PUT") {
             var newNode = "";
             req.on("data", function(data){
@@ -23,14 +70,18 @@ var ChordNode = function(ownPort, knownPort){
                 if(request.put == "successor"){
                     setSuccessor(newNode);
                 } else if(request.put == "predecessor") {
-                    console.log(me.port + " Before " + me.predecessor)
                     setPredecessor(newNode);
-                    console.log(me.port + " After " + me.predecessor)
+                } else if(request.put == "leaveSuccessor") {
+                    setSuccessorLeave(newNode);
+                } else if(request.put == "leavePredecessor") {
+                    setPredecessorLeave(newNode);
                 }
             });
         }
         res.end();
     });
+
+    var lookupRes = "";
 
     var me = {
         id: util.getHash("" + ownPort),
@@ -55,9 +106,7 @@ var ChordNode = function(ownPort, knownPort){
             });
             response.on("end", function(){
                 var currentNode = JSON.parse(res);
-                console.log(currentNode.successor);
                 if(currentNode.id < currentNode.successor){
-                    console.log(me.id);
                     if(me.id > currentNode.id && me.id < currentNode.successor){
                         joined(currentNode);
                         notify(currentNode.port, "/?put=successor");
@@ -100,6 +149,14 @@ var ChordNode = function(ownPort, knownPort){
         me.predecessorPort = node.port;
     };
 
+    function setSuccessorLeave(node){
+        me.successorPort = node.successorPort;
+    };
+
+    function setPredecessorLeave(node){
+        me.predecessorPort = node.predecessorPort;
+    };
+
     function notify(port, path){
         var options = {
             host: '127.0.0.1',
@@ -127,6 +184,11 @@ var ChordNode = function(ownPort, knownPort){
 
     };
 
+    function leave(){
+        notify(me.successorPort, "/?put=leavePredecessor");
+        notify(me.predecessorPort, "/?put=leaveSuccessor");
+    }
+
     function lookup(key, port){
         var options = {
             host: '127.0.0.1',
@@ -141,9 +203,7 @@ var ChordNode = function(ownPort, knownPort){
             });
             response.on("end", function(){
                 var currentNode = JSON.parse(res);
-                console.log(currentNode.successor);
                 if(currentNode.id < currentNode.successor){
-                    console.log(me.id);
                     if(key > currentNode.id && key < currentNode.successor){
                         showLookupResponse(currentNode.successorPort);
                     } else {
@@ -164,8 +224,10 @@ var ChordNode = function(ownPort, knownPort){
     };
 
     function showLookupResponse(port){
-
+        lookupRes = port;
     };
+
+
 
     join(knownPort);
 };
