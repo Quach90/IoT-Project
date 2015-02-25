@@ -4,15 +4,17 @@
 $(function() {
 
     var node = {};
-    $.get("http://127.0.0.1:1338/getNode", function (data) {
+    $.get("http://127.0.0.1:1350/getNode", function (data) {
         node = JSON.parse(data);
         $('#headline').text("Id: " + node.id);
         $('#pred').text(node.predecessor || "undefined");
         $('#succ').text(node.successor || "undefined");
     });
 
-    $.get("http://127.0.0.1:1338/getFingerTable", function (data) {
+    $.get("http://127.0.0.1:1350/getFingerTable", function (data) {
+        console.log(data);
         var results = JSON.parse(data);
+        console.log("HER " + results[1].node.id);
         drawTable(results);
 
     });
@@ -34,7 +36,7 @@ function drawRow(rowData, interval) {
     $("#fingerTable").append(row); //this will append tr element to table... keep its reference for a while since we will add cels into it
     row.append($("<td>" + rowData.start + "</td>"));
     row.append($("<td>" + interval + "</td>"));
-    //row.append($("<td>" + rowData.lastName + "</td>"));
+    row.append($("<td>" + rowData.node + "</td>"));
 }
 
 function lookup() {

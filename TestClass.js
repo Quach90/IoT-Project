@@ -1,4 +1,7 @@
 /**
+ * Created by Joakim Quach on 23-02-2015.
+ */
+/**
  * Created by Joakim Quach on 19-02-2015.
  */
 var express = require('express');
@@ -66,35 +69,43 @@ var ChordNode = function(ownPort, knownPort){
         }
     }
 
-    function find_successor(id, node){
-        var newNode = find_predecessor(id, node);
-        return newNode.successorPort;
+    function find_successor(id, node, callback){
+        var newNode = find_predecessor(id, node, callback);
+        //return callback(newNode.successorPort);
     }
 
-    function find_predecessor(id, node){
+    function find_predecessor(id, node, callback){
         var newNode = node;
-        while(id > newNode.id && id < newNode.successor){
-            newNode = closest_preceding_finger(id, newNode);
+        if(id > newNode.id && id < newNode.successor){
+            closest_preceding_finger(id, newNode, find_predecessor, callback);
         }
-        return newNode;
+        else{
+            callback(newNode);
+        }
     }
 
-    function closest_preceding_finger(id, node){
+    function closest_preceding_finger(id, node, callback, oldCallback){
         var fingerTable = undefined;
         requestify.get("http://127.0.0.1:" + node.port + "/getFingerTable").then(function(response) {
             // Get the response body
             fingerTable = JSON.parse(response.getBody());
-
-        });
-        while(fingerTable == undefined){
-            //Wait for callback
-        }
-        for(var i = 8; i >= 1; i--){
-            if(util.inRange(fingerTable[i].node.id, node.id, id)){
-                return fingerTable[i].node;
+            for(var i = 8; i >= 1; i--){
+                if(util.inRange(fingerTable[i].node.id, node.id, id)){
+                    console.log("JA TAK " + fingerTable[i].node)
+                    return callback(id, fingerTable[i].node, oldCallback);
+                }
             }
-        }
-        return node;
+            console.log("MÅ ALDRIG SKE")
+            return callback(id, node, oldCallback);
+        });
+
+
+
+
+    }
+
+    function closest_callback(fingerTable){
+
     }
 
 
@@ -105,6 +116,7 @@ var ChordNode = function(ownPort, knownPort){
                 // Get the response body
                 var knownNode = JSON.parse(response.getBody());
                 init_finger_table(knownNode);
+                find_successor(finger[1].start, knownNode, init_finger_table)
             });
         }
         else {
@@ -120,7 +132,7 @@ var ChordNode = function(ownPort, knownPort){
     };
 
     function init_finger_table(knownNode){
-        var fingerPort = find_successor(finger[1].start, knownNode);
+        var fingerPort = knownNode.successorPort;
         requestify.get("http://127.0.0.1:" + fingerPort + "/getNode").then(function(response) {
             // Get the response body
             finger[1].node = JSON.parse(response.getBody());
@@ -128,48 +140,54 @@ var ChordNode = function(ownPort, knownPort){
             node.successorPort = finger[1].node.port;
             node.predecessor = finger[1].node.predecessor;
             node.predecessorPort = finger[1].node.predecessorPort;
+            requestify.put("http://127.0.0.1:" + fingerPort + "/putPredecessor", node).then(function(response) {
+                loopStyle(1, knownNode);
+            });
         });
         console.log("FINGER FØR BODYSHIT");
-        requestify.put("http://127.0.0.1:" + fingerPort + "/putPredecessor", node).then(function(response) {
-            //No response
-        });
-        console.log("FINGER 1 = " + finger[1].node);
-        while(finger[1].node == undefined){
-            //Wait for callback
-        }
-        for(var i = 1; i < 8; i++){
-            console.log("FINGER FORLOKKE");
-            console.log("" + finger[i+1].start);
-            console.log("" + finger[i].node.id);
-            console.log("" + node.id);
-            if(finger[i+1].start > node.id && finger[i+1].start < finger[i].node.id){
-                console.log("FINGER FØR LOOP IF");
-                finger[i+1].node = finger[i].node;
-            }
-            else {
-                console.log("FINGER FØR FIND SUC");
-                var fingerI = find_successor(finger[i+1].start, knownNode);
-                console.log("FINGER FØR REQUEST");
-                requestify.get("http://127.0.0.1:" + fingerI + "/getNode").then(function(response) {
-                    finger[i+1].node = JSON.parse(response.getBody());
-                });
-                console.log("FINGER FØR WHILE");
-                while(finger[i+1].node == "undefined"){
-                    //Wait for callback
-                }
-                console.log("FINGER EFTER WHILE");
 
-            }
-            console.log("FINGER FORLOKKE STOP");
-        }
-        update_others();
     }
 
-    function update_others(){
-        for(var i = 1; i <= 8; i++){
-            var p = find_predecessor(node.id - Math.pow(2, i-1), node);
-            requestify.put("http://127.0.0.1:" + p.port + "/putFingerTable", {i: i, node: JSON.stringify(node)}).then(function(response) {
-                //No response
+    function loopStyle(i, knownNode){
+        if(i < 8) {
+            console.log("" + finger[i].node.id);
+
+            if (finger[i + 1].start > node.id && finger[i + 1].start < finger[i].node.id) {
+                finger[i + 1].node = finger[i].node;
+                loopStyle(i+1, knownNode);
+            }
+            else {
+                iSaved = i;
+                find_successor(finger[i + 1].start, knownNode, elseLoopStyle);
+            }
+            console.log("FINGER FORLOKKE STOP" + 1);
+
+        }
+        else {
+            console.log("UPDATE");
+            find_predecessor(node.id - Math.pow(2, i-1), node, update_others);
+        }
+    }
+
+    var iSaved = 0;
+
+    function elseLoopStyle(preNode){
+        var i = iSaved;
+        var fingerI = preNode.successorPort;
+        requestify.get("http://127.0.0.1:" + fingerI + "/getNode").then(function (response) {
+            finger[i + 1].node = JSON.parse(response.getBody());
+            loopStyle(i+1, knownNode)
+        });
+    }
+
+    function update_others(p){
+        update_others_loop(1, p);
+    }
+
+    function update_others_loop(i, p){
+        if(i <= 8) {
+            requestify.put("http://127.0.0.1:" + p.port + "/putFingerTable", {i: i, node: node}).then(function(response) {
+                update_others_loop(i++, p)
             });
         }
     }
@@ -177,7 +195,7 @@ var ChordNode = function(ownPort, knownPort){
     function update_finger_table(s, i){
         if(s.id >= node.id && s.id < finger[i].node.id){
             finger[i].node = s;
-            requestify.put("http://127.0.0.1:" + node.predecessorPort + "/putFingerTable", {i: i, node: JSON.stringify(s)}).then(function(response) {
+            requestify.put("http://127.0.0.1:" + node.predecessorPort + "/putFingerTable", {i: i, node: s}).then(function(response) {
                 //No response
             });
         }

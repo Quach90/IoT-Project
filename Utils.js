@@ -20,8 +20,15 @@ exports.inRange = function(finger, node, id){
     if(typeof id == 'string') {
         id = parseInt(id);
     }
-    return ((node < id) && (node < finger) && (key <= id)) || ((id < node) && (node < finger)) || (finger <= id) || (node == id)
+    return ((node < id) && (node < finger) && (finger < id)) ||
+        ((id < node) && ((node < finger) || (finger < id))) ||
+        ((node == id) && !(finger == node));
 }
 
+exports.inHalfRange = function(finger, node, id) {
+    return ((node < id) && (node < finger) && (finger <= id)) ||
+        ((id < node) && ((node < finger) || (finger <= id))) ||
+        (node == id);
+}
 
 
