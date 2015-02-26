@@ -1,24 +1,58 @@
-res.write('<!DOCTYPE html>');
-res.write('<html>');
-res.write('<head lang="en">');
-res.write('<meta charset="UTF-8">');
-res.write('<title>Chord Ring</title>');
-res.write('</head>');
-res.write('<body>');
-res.write('<h1 id="nodeId">ID</h1>');
-res.write('<table>');
-res.write('<tr>');
-res.write('<td><a href="">Predecessor</a></td>');
-res.write('<td><a href="' + + '">Successor</a></td>');
-res.write('</tr>');
-res.write('<tr>');
-res.write('<td><form method="GET">');
-res.write('<input type="text" name="lookup">');
-res.write('<input type="submit">');
-res.write('<input type="button" target=":D">');
-res.write('</form>');
-res.write('</td>');
-res.write('</tr>');
-res.write('</table>');
-res.write('</body>');
-res.write('</html>');
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Index</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="./index.js"></script>
+
+    <style>
+        h1 {
+            text-align: center ;
+        }
+        h2 {
+            font-size: 1.2rem;
+        }
+        table {
+            border: 1px solid #666;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        th {
+            width: 33%;
+            height: 30px;
+            background: #f8f8f8;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 2px;
+        }
+        td {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div id="lookup">
+    <h2>Open node:</h2>
+    <form>
+        <input type="text" id="lookupValue">
+        <input type="button" onclick="lookup()" value="submit">
+    </form>
+</div>
+
+<div id="admin">
+    <h2>Open fingertables between:</h2>
+    <form>
+        <label for="startValue">Start value: </label>
+        <input type="text" id="startValue">
+        <label for="stopValue">Stop value: </label>
+        <input type="text" id="stopValue">
+        <input type="button" onclick="getTables()" value="send">
+    </form>
+</div>
+
+
+</body>
+
+</html>
