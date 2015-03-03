@@ -8,6 +8,17 @@ var util = require("./Utils");
 var bodyParser = require('body-parser');
 var cors = require('cors');
 
+
+/* MongoDB setup */
+var mongo = require('mongodb');
+var monk = require('monk');
+var db = monk('localhost:27017/iot-project');
+
+var url = "https://api.spark.io/v1/devices/54ff6e066667515147451367/temperature?access_token=87a7eae044d8f328d9aa6e65e9e3274a3164e626";
+var dataBoolean = true;
+
+
+
 var ChordNode = function(ownPort, knownPort){
 
     console.log("Kørt med: " + ownPort + " og " + knownPort);
@@ -470,10 +481,28 @@ var ChordNode = function(ownPort, knownPort){
         })
     }
 
-
-
     join(knownPort);
+    setInterval(function() {
+        if(dataBoolean) {
+            requestify.get(url).then(function(response) {
+                var res = response.getBody();
 
+                var name = res.name;
+                var data = res.result;
+                var timestamp = new Date().getTime();
+
+                var collection = db.get('datacollection');
+
+                collection.insert({
+                    "timestamp": timestamp,
+                    "name": name,
+                    "data" : data
+                });
+            });
+        } else {
+            //...
+        }
+    }, 10000);
 };
 
 module.exports = ChordNode;
