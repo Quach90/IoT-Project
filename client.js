@@ -14,15 +14,28 @@ function getNode(port) {
     $("#fingerTable tr:gt(0)").remove();
     //$("#fingerTable > tbody").empty();
     $("#lookupValue").val("");
+    $("#resourceUrl").val("");
     $("#lookupResult").empty();
     $("#pred").empty();
     $("#succ").empty();
+    $("#delete").empty();
+    $("#resourceInfo").empty();
     $.get("http://127.0.0.1:" + port + "/getNode", function (data) {
         node = JSON.parse(data);
         $('#headline').text("Id: " + node.id);
         $('#pred').append("<a href='javascript:void(0)' onclick='getNode(" + node.predecessorPort + ")'>" + node.predecessor + "</a>");
         $('#succ').append("<a href='javascript:void(0)' onclick='getNode(" + node.successorPort + ")'>" + node.successor + "</a>");
     });
+
+    $.get("http://127.0.0.1:" + port + "/getHasResource", function (data) {
+        var result = JSON.parse(data);
+        if(result.hasResource){
+            $('#resourceInfo').append("<button onclick='getResource()'>Get Spark State</button>");
+            $('#resourceInfo').append("<table id='resourceTable'><tr><th>Time</th><th>Name</th><th>Data</th></tr></table>");
+        }
+    });
+
+    $('#delete').append("<a href='javascript:void(0)' onclick='deleteNode()'>Delete</a>");
 
     $.get("http://127.0.0.1:" + port + "/getFingerTable", function (data) {
         console.log(data);
@@ -34,6 +47,17 @@ function getNode(port) {
         drawTable(results, array);
 
     });
+}
+
+function getResource(){
+    $.get("http://127.0.0.1:" + node.port + "/getSparkInfo", function (data) {
+        var results = JSON.parse(data);
+        var row = $("<tr />")
+        $("#resourceTable").append(row);
+        row.append($("<td>" + results.timestamp + "</td>"));
+        row.append($("<td>" + results.name + "</td>"));
+        row.append($("<td>" + results.data + "</td>"));
+    })
 }
 
 function drawTable(data, array) {
@@ -69,11 +93,31 @@ function lookup() {
                     var result = JSON.parse(data);
                     $('#lookupResult').append("<a id='lookupResult' href='javascript:void(0)' onclick='getNode(" + result.port + ")'>" + result.id + "</a>");
                 })
-            }, 100);
+            }, 10);
         });
 
     }
 
+}
+
+function deleteNode(){
+    $.ajax({
+        url: "http://127.0.0.1:" + node.port + "/",
+        type: 'DELETE',
+        success: function(result) {
+            setTimeout(function (){
+                window.location.href = "http://localhost:8080/IoT%20Project/hi.html?port=" + node.successorPort;
+            }, 200);
+
+        }
+    });
+}
+
+function addResource(){
+    var resUrl = {url: $('#resourceUrl').val()};
+    $.post("http://127.0.0.1:" + node.port + "/postResource", resUrl, function(data){
+        window.location.href = "http://localhost:8080/IoT%20Project/hi.html?port=" + node.port;
+    })
 }
 
 function getUrlParameter(sParam)

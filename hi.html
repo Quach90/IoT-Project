@@ -35,10 +35,25 @@
         #lookupResult {
             display:inline-block;
         }
+        #delete{
+            position: absolute;
+            right: 20px;
+        }
+        #back{
+            position: absolute;
+            left: 20px;
+        }
+        button {
+            margin: 0 auto;
+            width: 200px;
+        }
+        #resourceInfo{
+            width: 100%;
+        }
     </style>
 </head>
 <body>
-<a href="index.html">Back to index</a>
+<div id="back"><a href="index.html">Back to index</a></div><div id="delete"></div>
 <h1 id="headline"></h1>
 <table>
     <tr>
@@ -74,6 +89,17 @@
 
     </table>
 
+</div>
+
+<div id="resource">
+    <h2>Resource</h2>
+    <form>
+        <input type="text" id="resourceUrl">
+        <input type="button" onclick="addResource()" value="Add Resource">
+    </form>
+    <div id="resourceInfo">
+
+    </div>
 </div>
 
 
