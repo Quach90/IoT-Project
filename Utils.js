@@ -26,9 +26,58 @@ exports.inRange = function(finger, node, id){
 }
 
 exports.inHalfRange = function(finger, node, id) {
+    if(typeof finger == 'string') {
+        finger = parseInt(finger);
+    }
+    if(typeof node == 'string') {
+        node = parseInt(node);
+    }
+    if(typeof id == 'string') {
+        id = parseInt(id);
+    }
     return ((node < id) && (node < finger) && (finger <= id)) ||
         ((id < node) && ((node < finger) || (finger <= id))) ||
         (node == id);
+}
+
+exports.inHalfRangeStart = function(finger, node, id) {
+    if(typeof finger == 'string') {
+        finger = parseInt(finger);
+    }
+    if(typeof node == 'string') {
+        node = parseInt(node);
+    }
+    if(typeof id == 'string') {
+        id = parseInt(id);
+    }
+    return ((node < id) && (node <= finger) && (finger < id)) ||
+        ((id < node) && ((node <= finger) || (finger < id))) ||
+        (node == id);
+}
+
+exports.isIn = function(value, left, right, includeLeft, includeRight) {
+    if(typeof value == 'string') {
+        value = parseInt(value);
+    }
+    if(typeof left == 'string') {
+        left = parseInt(left);
+    }
+    if(typeof right == 'string') {
+        right = parseInt(right);
+    }
+    if (right == left) {
+        /*
+        if(includeLeft || includeRight){
+            return true;
+        }
+        */
+        return !(value == right);
+    }
+    if (right > left) {
+        return (includeLeft ? value >= left : value > left) && (includeRight ? value <= right : value < right);
+    } else {
+        return (includeLeft ? value >= left : value > left) || (includeRight ? value <= right : value < right);
+    }
 }
 
 

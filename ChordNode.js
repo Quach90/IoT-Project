@@ -27,6 +27,15 @@ var ChordNode = function(ownPort, knownPort){
         res.send(JSON.stringify(finger));
     });
 
+    app.get('/lookup', function (req, res) {
+        lookup(req.param("key"));
+        res.end();
+    });
+
+    app.get('/getLookup', function (req, res) {
+        res.send(JSON.stringify(finger));
+    });
+
     app.put('/putPredecessor', function (req, res) {
         var request = req.body;
         node.predecessor = request.id;
@@ -45,15 +54,21 @@ var ChordNode = function(ownPort, knownPort){
         var request = req.body;
         var s = request.node;
         var tal = request.i;
+        console.log("UTIL med " + s.id + " " + node.id + " " + finger[tal].node.id);
         //if(s.id >= node.id && s.id < finger[tal].node.id){
-        if ((util.inHalfRange(s.id, node.id, finger[tal].node.id))) {
-            finger[tal].node = s;
-            requestify.put("http://127.0.0.1:" + node.predecessorPort + "/putFingerTable", {
-                i: tal,
-                node: s
-            }).then(function (response) {
-                res.end();
-            });
+        if ((util.isIn(s.id, finger[tal].start, finger[tal].node.id, true, false))) {
+            if(finger[tal].start == finger[tal].node.id){
+
+            } else {
+                console.log("Finger start " + finger[tal].start + " sat til " + s.id + " fra " + finger[tal].node.id);
+                finger[tal].node = s;
+                requestify.put("http://127.0.0.1:" + node.predecessorPort + "/putFingerTable", {
+                    i: tal,
+                    node: s
+                }).then(function (response) {
+                    res.end();
+                });
+            }
         }
         res.end();
     });
@@ -96,6 +111,7 @@ var ChordNode = function(ownPort, knownPort){
                 // Get the response body
                 var knownNode = JSON.parse(response.getBody());
                 init_finger_table(knownNode);
+
             });
         }
         else {
@@ -117,8 +133,8 @@ var ChordNode = function(ownPort, knownPort){
 
     function find_predecessor(id, node){
         //if(!((id > node.id && id < node.successor) || (node.id == node.successor))){
-        if(!util.inRange(id, node.id, node.successor)){
-            console.log("IF FP " + node.id + " " + node.port);
+        if(!util.isIn(id, node.id, node.successor, false, true)){
+            console.log("IF FP " + id +  "" + node.id + " " + node.successor);
             closest_preceding_finger(id, node);
         }
         else {
@@ -131,14 +147,23 @@ var ChordNode = function(ownPort, knownPort){
         requestify.get("http://127.0.0.1:" + node.port + "/getFingerTable").then(function(response) {
             // Get the response body
             var fingerTable = JSON.parse(response.getBody());
-            for(var i = 8; i >= 1; i--){
-                console.log(" " + i)
-                if(util.inRange(fingerTable[i].node.id, node.id, id)){
-                    console.log("UTIL FANGET");
-                    return find_predecessor(id, fingerTable[i].node);
-                }
-            }
+            closest_preceding_finger_loop(id, node, fingerTable, 8);
         });
+    }
+
+    function closest_preceding_finger_loop(id, node, fingerTable, i){
+        if(i >= 1){
+            requestify.get("http://127.0.0.1:" + fingerTable[i].node.port + "/getNode").then(function(response) {
+                var fingerI = JSON.parse(response.getBody());
+                if(util.isIn(fingerI.id, node.id, id, false, false)){
+                    console.log("UTIL FANGET");
+                    find_predecessor(id, fingerI);
+                }
+                else {
+                    closest_preceding_finger_loop(id, node, fingerTable, i-1)
+                }
+            })
+        }
     }
 
     function init_finger_table_part2(knownNode){
@@ -162,7 +187,7 @@ var ChordNode = function(ownPort, knownPort){
     function init_finger_table_part3(i, knownNode){
         if(i < 8){
             //if(finger[i+1].start > node.id && finger[i+1].start < finger[i].node.id){
-            if(util.inHalfRange(finger[i+1].start, node.id, finger[i].node.id)){
+            if(util.isIn(finger[i+1].start, node.id, finger[i].node.id, true, false)){
                 console.log("UTIL med " + finger[i+1].start + " " + node.id + " " + finger[i].node.id);
                 console.log("Finger " + (i+1) + " sat til " + finger[i].node.id);
                 finger[i+1].node = finger[i].node;
@@ -174,19 +199,14 @@ var ChordNode = function(ownPort, knownPort){
 
         }
         else{
-            console.log("UPDATE");
-            if(node.port == 1353){
-
-            }else{
-                update_others(1);
-            }
+            update_others(1);
         }
     }
 
     function find_predecessor_toPart3(id, knownNode, i, knownNodeReal){
         //if(!((id > knownNode.id && id < knownNode.successor) || (knownNode.id = knownNode.successor))){
         console.log("UTIL med " + id + " " + knownNode.id + " " + knownNode.successor);
-        if(!util.inRange(id, knownNode.id, knownNode.successor)){
+        if(!util.isIn(id, knownNode.id, knownNode.successor, false, true)){
             closest_preceding_finger_toPart3(id, knownNode, i, knownNodeReal);
         }
         else {
@@ -204,31 +224,39 @@ var ChordNode = function(ownPort, knownPort){
         requestify.get("http://127.0.0.1:" + node.port + "/getFingerTable").then(function(response) {
             // Get the response body
             var fingerTable = JSON.parse(response.getBody());
-            for(var i = 8; i >= 1; i--){
-                console.log("UTIL med i " + i + " resten " + fingerTable[i].node.id + " " + node.id + " " + id);
-                if(util.inRange(fingerTable[i].node.id, node.id, id)){
-                    console.log("knownNode inden " + fingerTable[i].node.successor);
-                    return find_predecessor_toPart3(id, fingerTable[i].node, tal, knownNodeReal);
-                }
-            }
+            closest_preceding_finger_loop_toPart3(id, node, fingerTable, 8, tal, knownNodeReal);
         });
+    }
+
+    function closest_preceding_finger_loop_toPart3(id, node, fingerTable, i, tal, knownNodeReal){
+        if(i >= 1){
+            requestify.get("http://127.0.0.1:" + fingerTable[i].node.port + "/getNode").then(function(response) {
+                var fingerI = JSON.parse(response.getBody());
+                if(util.isIn(fingerI.id, node.id, id, false, false)){
+                    console.log("UTIL FANGET");
+                    find_predecessor_toPart3(id, fingerI, tal, knownNodeReal);
+                }
+                else {
+                    closest_preceding_finger_loop_toPart3(id, node, fingerTable, i-1, tal, knownNodeReal)
+                }
+            })
+        }
     }
 
     function update_others(i){
         if(i <= 8){
-            find_predecessor_update_others(node.id - Math.pow(2, i-1), node, i);
+            console.log("Update Others - " + i);
+            find_predecessor_update_others((node.id - Math.pow(2, i-1)), node, i);
         }
     }
 
     function find_predecessor_update_others(id, knownNode, i){
         //if(!(id > knownNode.id && id < knownNode.successor)){
-        console.log("1");
-        if(!util.inRange(id, knownNode.id, knownNode.successor)){
-            console.log("2");
+        if(!util.isIn(id, knownNode.id, knownNode.successor, true, false)){
+            console.log("Update Others - " + i + " kom ind i util " +  id + " "+ knownNode.id + " " + knownNode.successor);
             closest_preceding_finger_update_others(id, knownNode, i);
         }
         else {
-            console.log("3");
             requestify.put("http://127.0.0.1:" + knownNode.port + "/putFingerTable",  {i: i, node: node}).then(function(response) {
                 update_others(i+1);
             });
@@ -239,12 +267,74 @@ var ChordNode = function(ownPort, knownPort){
         requestify.get("http://127.0.0.1:" + node.port + "/getFingerTable").then(function(response) {
             // Get the response body
             var fingerTable = JSON.parse(response.getBody());
-            for(var i = 8; i >= 1; i--){
-                if(util.inRange(fingerTable[i].node.id, node.id, id)){
-                    return find_predecessor_update_others(id, fingerTable[i].node, tal);
-                }
-            }
+            closest_preceding_finger_loop_update_others(id, node, fingerTable, 8, tal);
         });
+    }
+
+    function closest_preceding_finger_loop_update_others(id, node, fingerTable, i, tal){
+        if(i >= 1){
+            requestify.get("http://127.0.0.1:" + fingerTable[i].node.port + "/getNode").then(function(response) {
+                var fingerI = JSON.parse(response.getBody());
+                if(util.isIn(fingerI.id, node.id, id, false, true)){
+                    console.log("UTIL FANGET " + fingerI.id + " " + node.id + " " + id + i);
+                    find_predecessor_update_others(id, fingerI, tal);
+                }
+                else {
+                    closest_preceding_finger_loop_update_others(id, node, fingerTable, i-1, tal)
+                }
+            })
+        }
+    }
+
+    function lookup(key){
+        find_predecessor_lookup(key, node);
+    }
+
+    function find_predecessor_lookup(id, node){
+        //if(!((id > node.id && id < node.successor) || (node.id == node.successor))){
+        if(!util.isIn(id, node.id, node.successor, false, true)){
+            closest_preceding_finger_lookup(id, node);
+        }
+        else {
+            var result = node.successorPort;
+            // Gør noget med resultat
+        }
+    }
+
+    function closest_preceding_finger_lookup(id, node){
+        requestify.get("http://127.0.0.1:" + node.port + "/getFingerTable").then(function(response) {
+            // Get the response body
+            var fingerTable = JSON.parse(response.getBody());
+            closest_preceding_finger_loop_lookup(id, node, fingerTable, 8);
+        });
+    }
+
+    function closest_preceding_finger_loop_lookup(id, node, fingerTable, i){
+        if(i >= 1){
+            requestify.get("http://127.0.0.1:" + fingerTable[i].node.port + "/getNode").then(function(response) {
+                var fingerI = JSON.parse(response.getBody());
+                if(util.isIn(fingerI.id, node.id, id, false, false)){
+                    console.log("UTIL FANGET");
+                    find_predecessor_lookup(id, fingerI);
+                }
+                else {
+                    closest_preceding_finger_loop_lookup(id, node, fingerTable, i-1)
+                }
+            })
+        }
+    }
+
+    function stabilize(){
+        requestify.get("http://127.0.0.1:" + node.successorPort + "/getNode").then(function(response) {
+            var successor = JSON.parse(response.getBody());
+            if(util.isIn(successor.predecessor, node.id, node.successor, false, false)){
+                node.successor = successor.predecessor;
+                node.successorPort = successor.predecessorPort;
+            }
+            requestify.put("http://127.0.0.1:" + node.successorPort + "/notify",  node).then(function(response) {
+                //
+            });
+        })
     }
 
 

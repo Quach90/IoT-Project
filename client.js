@@ -7,6 +7,8 @@ $(function() {
     getNode(port);
 });
 
+var node;
+
 function getNode(port) {
     document.title = 'Node ' + port;
     $("#fingerTable tr:gt(0)").remove();
@@ -53,11 +55,11 @@ function drawRow(rowData, interval, port) {
 }
 
 function lookup() {
-    lookupValue = $('#lookupValue').val();
+    var lookupValue = $('#lookupValue').val();
     if(isNaN(lookupValue)) {
         console.log("Not a number")
     } else {
-        $.get("http://127.0.0.1:" + lookupValue + "/getFingerTable", function (data) {
+        $.get("http://127.0.0.1:" + node.port + "/lookup?key=" + lookupValue, function (data) {
             var results = JSON.parse(data);
             console.log(results);
         });
