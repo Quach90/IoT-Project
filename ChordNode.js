@@ -33,7 +33,7 @@ var ChordNode = function(ownPort, knownPort){
     });
 
     app.get('/getLookup', function (req, res) {
-        res.send(JSON.stringify(finger));
+        res.send(JSON.stringify(lookupResult));
     });
 
     app.put('/putPredecessor', function (req, res) {
@@ -73,6 +73,11 @@ var ChordNode = function(ownPort, knownPort){
         res.end();
     });
 
+    app.delete('/', function (req, res) {
+
+        res.end();
+    });
+
     //Node
 
     var node = {
@@ -87,6 +92,11 @@ var ChordNode = function(ownPort, knownPort){
     var finger = [
 
     ];
+
+    var lookupResult = {
+        id: "No result",
+        port: ""
+    };
 
     //Set start values in FingerTable
     for(var i = 1; i <= 8; i++){
@@ -296,8 +306,8 @@ var ChordNode = function(ownPort, knownPort){
             closest_preceding_finger_lookup(id, node);
         }
         else {
-            var result = node.successorPort;
-            // Gør noget med resultat
+            lookupResult.id = node.successor;
+            lookupResult.port = node.successorPort
         }
     }
 
@@ -322,6 +332,10 @@ var ChordNode = function(ownPort, knownPort){
                 }
             })
         }
+    }
+
+    function leave(){
+
     }
 
     function stabilize(){

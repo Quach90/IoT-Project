@@ -29,6 +29,12 @@
         td {
             text-align: center;
         }
+        form {
+            display: inline;
+        }
+        #lookupResult {
+            display:inline-block;
+        }
     </style>
 </head>
 <body>
@@ -52,7 +58,9 @@
     <h2>Lookup</h2>
     <form>
         <input type="text" id="lookupValue">
-        <input type="button" onclick="lookup()" value="submit">
+        <input type="button" onclick="lookup()" value="Lookup">
+        <label for="lookupResult">Result: </label>
+        <div id="lookupResult"></div>
     </form>
 </div>
 <div id="tableHolder">

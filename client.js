@@ -13,6 +13,8 @@ function getNode(port) {
     document.title = 'Node ' + port;
     $("#fingerTable tr:gt(0)").remove();
     //$("#fingerTable > tbody").empty();
+    $("#lookupValue").val("");
+    $("#lookupResult").empty();
     $("#pred").empty();
     $("#succ").empty();
     $.get("http://127.0.0.1:" + port + "/getNode", function (data) {
@@ -56,13 +58,20 @@ function drawRow(rowData, interval, port) {
 
 function lookup() {
     var lookupValue = $('#lookupValue').val();
+    $("#lookupValue").val("");
+    $("#lookupResult").empty();
     if(isNaN(lookupValue)) {
         console.log("Not a number")
     } else {
         $.get("http://127.0.0.1:" + node.port + "/lookup?key=" + lookupValue, function (data) {
-            var results = JSON.parse(data);
-            console.log(results);
+            setTimeout(function (){
+                $.get("http://127.0.0.1:" + node.port + "/getLookup", function (data) {
+                    var result = JSON.parse(data);
+                    $('#lookupResult').append("<a id='lookupResult' href='javascript:void(0)' onclick='getNode(" + result.port + ")'>" + result.id + "</a>");
+                })
+            }, 100);
         });
+
     }
 
 }
