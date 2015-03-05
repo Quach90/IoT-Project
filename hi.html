@@ -50,9 +50,27 @@
         #resourceInfo{
             width: 100%;
         }
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+
+        .x.axis path {
+            display: none;
+        }
+
+        .line {
+            fill: none;
+            stroke: steelblue;
+            stroke-width: 1.5px;
+        }
     </style>
 </head>
 <body>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script src="http://d3js.org/d3.v3.js"></script>
 <div id="back"><a href="index.html">Back to index</a></div><div id="delete"></div>
 <h1 id="headline"></h1>
 <table>
@@ -100,9 +118,11 @@
     <div id="resourceInfo">
 
     </div>
+    <h2>Graph</h2>
+    <div id="graph">
+
+    </div>
 </div>
-
-
 </body>
 
 </html>
